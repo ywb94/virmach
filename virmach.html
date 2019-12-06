@@ -1,0 +1,600 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Virmach监控</title>
+<script src="jquery.min.js"></script>
+<script type="text/javascript">
+ var reftime=3;
+ var lstore=0;
+ if(window.localStorage)
+ lstore=1;
+
+        function refreshTime() {
+            var time_span = document.getElementById("time");
+            var time_val = time_span.innerHTML;
+            var int_val = parseInt(time_val);//返回由字符串转换得到的整数。
+            var new_int_val = int_val - 1;
+            if (new_int_val > -1) {
+                time_span.innerHTML = new_int_val;
+                
+            }
+            else {
+                time_span.innerHTML = reftime;
+								MyRefresh();
+            }
+					  setTimeout("refreshTime()", 1000);
+
+        }
+function tbRefresh(){
+
+ if(lstore==1)
+ {
+     if (localStorage.getItem("virmach") != null) {
+        $("#mtb").html(localStorage.getItem("virmach"));	
+    }      
+  }  
+}
+
+function MyRefresh(){
+ $.ajax({
+        type: "get",
+        url: "https://billing.virmach.com/modules/addons/blackfriday/new_plan.json",
+
+        data: {},//提交的数据
+        dataType: "json",//回调函数接收数据的数据格式
+        success: function(msg){
+
+iwin=msg.windows;
+bwin= document.getElementById("windows"); 
+
+pp= msg.price;
+ppv=pp.substr(1,5);
+ppf=parseFloat(ppv);
+
+ppp=pp.replace("yr","年");
+
+var price_span = document.getElementById("pricing");
+var price_val = price_span.innerHTML;
+if(ppp!=price_val)
+{
+ haveplay=0;
+ toplay=1;
+ //自选套餐处理
+ mpri=parseFloat(document.getElementById("priv").value); 
+ mcpu=parseFloat(document.getElementById("cpuv").value); 
+ mloc=parseFloat(document.getElementById("locv").value); 
+ mram=parseFloat(document.getElementById("ramv").value); 
+ mhdd=parseFloat(document.getElementById("hddv").value); 
+ mbw=parseFloat(document.getElementById("bwv").value); 
+ mall=mpri+mcpu+mloc+mram+mhdd+mbw;
+ 
+ if(mall!=0)
+ {
+ 	icpu=parseInt(msg.cpu);
+ 	ihdd=parseInt(msg.hdd);
+ 	iram=parseInt(msg.ram);
+ 	ibw=parseInt(msg.bw);
+ 
+ 	
+ 	 if(mpri!=0)
+  {
+
+ 	if( ppf>=mpri)
+ 	 {
+ 		toplay=0;
+ 	 }
+ 	}
+ 	if(mcpu!=0&&toplay==1)
+ 	{
+ 	if( icpu<mcpu)
+ 	 {
+ 		toplay=0;
+ 	 } 		
+ 	}
+ 	if(mram!=0&&toplay==1)
+ 	{
+ 	if( iram<mram)
+ 	 {
+ 		toplay=0;
+ 	 } 		
+ 	} 	
+ 	
+ 	if(mhdd!=0&&toplay==1)
+ 	{
+ 	if( ihdd<mhdd)
+ 	 {
+ 		toplay=0;
+ 	 } 		
+ 	}
+ 	if(mbw!=0&&toplay==1)
+ 	{
+ 	if( ibw<mbw)
+ 	 {
+ 		toplay=0;
+ 	 } 		
+ 	} 	 	
+
+ 	if(mloc!=0&&toplay==1)
+ 	{
+ 		switch(mloc)
+ 		{
+ 			case 1:
+ 			 		if(msg.location.toUpperCase()!="LOS ANGELES, CA")
+ 					toplay=0;
+ 					break;
+ 			case 2:
+ 			 		if(msg.location.toUpperCase()!="SAN JOSE, CA")
+ 					toplay=0;
+ 					break; 					
+ 			case 3:
+ 			 		if(msg.location.toUpperCase()!="SEATTLE, WA")
+ 					toplay=0;
+ 					break;
+ 			case 4:
+ 			 		if(msg.location.toUpperCase()!="BUFFALO, NY")
+ 					toplay=0;
+ 					break; 		 
+ 			default:
+ 			 		if(msg.location.toUpperCase()!="LOS ANGELES, CA"&&msg.location.toUpperCase()!="SAN JOSE, CA")
+ 					toplay=0;
+ 					break; 								
+ 		}
+
+ 		
+
+ 		
+ 	}
+
+  if(toplay==1)
+  {
+  	 playVoice6();
+ 	   haveplay=1;
+  }
+ }
+
+
+ mzx=document.getElementById("onlyzx").checked;
+ if(haveplay==0&&mzx==false)
+ {
+ //语音处理	
+ if( ppf<10.0)
+ playVoice2();
+ else if( msg.location.toUpperCase()=="SAN JOSE, CA")
+  playVoice4();
+ else if( msg.location.toUpperCase()=="LOS ANGELES, CA")
+  playVoice3();
+ else if( iwin=="TRUE")
+ playVoice5();
+ else 
+ playVoice1();
+}
+ 
+ //历史记录处理
+ var date=new Date();
+ var month=date.getMonth()+1;
+ var day=date.getDate();
+ var hour=date.getHours()< 10 ? "0" + date.getHours(): date.getHours(); //获取小时   
+ var minutes=date.getMinutes()< 10 ? "0" + date.getMinutes(): date.getMinutes(); //获取分钟   
+ var second=date.getSeconds()< 10 ? "0" + date.getSeconds(): date.getSeconds(); //获取秒 
+ ctime=month+'月'+day+'日 '+hour+':'+minutes;//+':'+second;
+ tr = document.createElement("tr");
+ 
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=ctime;
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.cpu+"核";
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.ram+"MB"; 
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.hdd+"GB";
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.bw+"GB"; 
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.virt;
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=msg.location;   
+ td = document.createElement("td");
+ tr.appendChild(td);
+ if(iwin=="TRUE")
+ td.innerHTML="是";
+ else
+ td.innerHTML="否";	
+ td = document.createElement("td");
+ tr.appendChild(td);
+ td.innerHTML=ppp;   
+ 
+ var table = document.getElementById("mytable1");
+ var table_body = table.getElementsByTagName("tbody").item(0);
+ var first_row = table_body.getElementsByTagName("tr").item(2);
+ table_body.insertBefore(tr, first_row);
+ 
+
+$('#pricing').html( ppp);  
+$('#virt').html( msg.virt);  
+$('#ram').html( msg.ram); 
+$('#cpu').html( msg.cpu); 
+$('#hdd').html( msg.hdd); 
+$('#bw').html( msg.bw); 
+$('#location').html( msg.location); 
+$('#ips').html( msg.ips);
+$('#message').html( msg.message);   
+ 
+
+if(iwin=="TRUE")
+{
+bwin.style.display="block";
+}
+else
+{
+bwin.style.display="none";
+}
+if(lstore==1)
+localStorage.setItem("virmach",document.getElementById('mtb').innerHTML );
+
+}
+
+
+if(msg.ended!=undefined)
+{
+$('#buyurl').html( "已售空");
+$('#buyurl').attr('style','background-color: red');
+}
+else 
+{
+$('#buyurl').html( "立即购买");
+$('#buyurl').attr('style','');
+}
+
+        },
+        error:function(msg){
+          console.log(msg);
+        }
+      });
+
+}
+
+window.onload=function(){
+  refreshTime();
+
+	tbRefresh();
+	MyRefresh();
+}
+	
+function 	cmsec(){
+	reftime=document.getElementById("secv").value; 
+	document.getElementById("time").innerHTML=reftime;
+}
+function playVoice1(){
+    document.getElementById('audio1').play();
+}
+function playVoice2(){
+    document.getElementById('audio2').play();
+}
+function playVoice3(){
+    document.getElementById('audio3').play();
+}
+function playVoice4(){
+    document.getElementById('audio4').play();
+}
+function playVoice5(){
+    document.getElementById('audio5').play();
+}
+function playVoice6(){
+    document.getElementById('audio6').play();
+}
+function cleartb(){
+    if(lstore==1)
+    {
+     tbhead="<tr><td colspan=\"9\" align=\"center\" class=\"nobg\"> Virmach闪购本地历史记录</td>	</tr><tr><th>闪购开始时间</th><th>CPU数</th><th>内存</th><th>磁盘</th><th>流量</th><th>架构</th><th>VPS所在地点</th><th>可否windows</th><th>VPS年付价格</th></tr>";
+     localStorage.setItem("virmach",tbhead );
+     $("#mtb").html(tbhead);
+    }
+    
+}
+</script>	
+	
+  </head>
+<style type="text/css">
+body {
+ font: normal 11px auto "Microsoft YaHei","Trebuchet MS", Verdana, Arial, Helvetica, sans-serif;
+ color: #4f6b72;
+ background: #E6EAE9;
+  background-image: linear-gradient(#8b9da9, #fff6e4);
+ box-shadow: inset 0 0 100px hsla(0,0%,0%,.3);
+}
+.pricetable {
+    display: block;
+    position: relative;
+    padding: 0;
+    margin: 0 auto;
+width:600px;
+}
+.pricetable .price-head {
+    /* position: relative; */
+    /* text-align: center; */
+    padding: 25px 0;
+    text-align: center;
+    background: #f1f2f3;
+}
+.price-head .title {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+.pricetable .price-font {
+    font-size: 30px;
+    line-height: 100%;
+    vertical-align: middle;
+    margin-bottom: 0;
+}
+
+.pricing-inner {
+    position: relative;
+    display: block;
+    margin: 20px 0;
+}
+.pricetable .price-content {
+    text-align: left;
+    line-height: 24px;
+    padding: 10px 40px;
+    background-color: #f6f6f6;
+}
+.clear {
+    clear: both;
+    display: block;
+    width: 0;
+    height: 0;
+    visibility: hidden;
+}
+.pricetable .price-content ul li {
+    list-style: none;
+    padding: 5px;
+    line-height: 150%;
+    background: url(dark10.png) bottom left repeat-x transparent;
+}
+.pricetable .column {
+    float: left;
+    position: relative;
+    z-index: 3;
+    margin-right: 1%;
+    width: 24.2%;
+}
+
+
+.btn.greensea {
+    background-color: #16a085;
+}
+
+.btn.large {
+    font-size: 16px;
+    line-height: 24px;
+    padding: .5em 1.3em;
+}
+
+.btn.full, .btn.full span {
+    display: block;
+}
+
+.center {
+    float: none;
+    text-align: center;
+    margin: inherit auto;
+}
+
+.btn, .btn span {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+.btn {
+    position: relative;
+    zoom: 1;
+    overflow: visible;
+    line-height: 1em;
+    margin: 0 3px 8px 0;
+    outline: none;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-transition: all 300ms ease-in;
+    -moz-transition: all 300ms ease-in;
+    -o-transition: all 300ms ease-in;
+    transition: all 300ms ease-in;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    color: #fff;
+}
+th {
+    font: bold 11px "Microsoft YaHei","Trebuchet MS", Verdana, Arial, Helvetica, sans-serif;
+    color: white;
+    border-right: 1px solid #C1DAD7;
+    border-bottom: 1px solid #C1DAD7;
+    border-top: 1px solid #C1DAD7;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 6px 6px 12px;
+    background: #00684e;
+}
+td {
+    border-right: 1px solid #C1DAD7;
+    border-bottom: 1px solid #C1DAD7;
+    background-color: #fff;
+    font-size: 11px;
+    padding: 6px 6px 6px 12px;
+}
+</style>
+
+
+<body>
+
+
+
+<div class="pricetable">
+<div class="pricing-inner">
+<div class="column" style="float:none;width:auto">
+<div class="price-head" style="color:#ffffff;background-color:#00684e">
+<h2 class="title">Virmach黑五闪购监控-by <a href="http://iytc.net">iytc.net</a></h2>
+<h2 class="title">本页面会自动刷新，检测到新套餐后会中文语音提示</h2>
+<h2 class="title" ><a href="javascript:void(0)" onclick="playVoice2()" style="color:white;" title="试听">小于$10套餐</a>、<a href="javascript:void(0)" onclick="playVoice4()" style="color:white;" title="试听">圣何塞</a>和<a href="javascript:void(0)" onclick="playVoice3()" style="color:white;" title="试听">洛杉矶</a>套餐、<a href="javascript:void(0)" onclick="playVoice5()" style="color:white;" title="试听">windows套餐</a>、<a href="javascript:void(0)" onclick="playVoice6()" style="color:white;" title="试听">自选套餐</a>有单独语音提示</h2>
+<h3 class="price-font" id="pricing">  </h3>
+<p></p></div>
+<div class="price-content" style="text-align:center">
+<div style="margin-left: 1em">
+<ul>
+<li><img alt="VIRTUALIZATION" src="3d.png" style="height:20px;width:20px"> 架构：<strong id="virt"></strong> – <span id="message"></span ></li>
+<li id="windows" style="display:none;"><img alt="WINDOWS" src="windows.png" style="height:20px;width:20px;"> 可用<strong>WINDOWS</strong> </li>
+<li><img alt="RAM" src="ram.png" style="height:20px;width:20px">内存： <strong id="ram"></strong>MB RAM</li>
+<li><img alt="CPU" src="cpu.png" style="height:20px;width:20px"> CPU:<strong id="cpu"></strong> vCORE</li>
+<li><img alt="HDD" src="disk.png" style="height:20px;width:20px"> 硬盘：<strong id="hdd"></strong>GB SSD (RAID 10)</li>
+<li><img alt="BANDWIDTH" src="network.png" style="height:20px;width:20px">月流量： <strong id="bw"></strong> GB/月</li>
+<li><img alt="LOCATION" src="server2.png" style="height:20px;width:20px">地点： <strong id="location"></strong> </li>
+<li><img alt="IPs" src="ip.png" style="height:20px;width:20px"> IP数：<strong id="ips"></strong> DEDICATED IPv4</li>
+</ul>
+<p class="center">
+</p><div class="callOutBox" style="background-color:#f4dd81;padding: 10px 10px 10px 20px">
+
+</div>
+<p></p>
+<div class="callOut_Text"><img src="ref3.gif" style="height:20px;width:20px;"> 数据将在<span id="time">3</span>秒后与服务器同步</div>
+<p class="center"><a class=" btn center large full greensea flat" id="buyurl" href="https://billing.virmach.com/aff.php?aff=4258&amp;pid=175&amp;billingcycle=annually" style="" target=_blank>购买</a></p>
+<p></p></div>
+<p></p></div>
+<p></p></div>
+<p></p></div>
+<div class="clear"></div>
+<p></p></div>
+<audio src='xh.mp3'  style='display:none' id='audio1'></audio>
+<audio src='cz.mp3'  style='display:none' id='audio2'></audio>
+<audio src='lsj.mp3' style='display:none' id='audio3'></audio>
+<audio src='shs.mp3' style='display:none' id='audio4'></audio>
+<audio src='win.mp3' style='display:none' id='audio5'></audio>
+<audio src='zx.mp3'  style='display:none' id='audio6'></audio>
+<center>
+<img src="hr.png" >
+<table id="mset"  >
+	<tbody><tr><th colspan="6" align="center" > 全局设置</th></tr>
+<tr><td colspan="3" align="center" >
+<span id="msec">设定刷新时间</span>
+<select onchange="cmsec()" id="secv" >
+<option value="1">1秒</option>
+<option value="2">2秒</option>
+<option value="3" selected="selected">3秒</option>
+<option value="4">4秒</option>
+<option value="5">5秒</option>
+<option value="10">10秒</option>
+<option value="15">15秒</option>
+<option value="20">20秒</option>
+<option value="30">30秒</option>
+</select>
+</td>	
+<td colspan="3" align="center" >
+	<input type="checkbox" id="onlyzx" >只播放自选套餐语音
+</td>	
+</tr>
+<tr><th colspan="6" align="center" > 自选套餐语音触发设置</th></tr>
+<tr><td>
+<span id="msec">价格</span>
+<select id="priv">
+<option value="0">所有</option>
+<option value="5">小于$5</option>
+<option value="10">小于$10</option>
+<option value="15">小于$15</option>
+<option value="20">小于$20</option>
+<option value="25">小于$25</option>
+<option value="30">小于$30</option>
+<option value="40">小于$40</option>
+<option value="50">小于$50</option>
+</select>
+
+</td>
+<td>
+<span id="msec">地点</span>
+<select id="locv">
+<option value="0">所有</option>
+<option value="1">洛杉矶</option>
+<option value="2">圣何塞</option>
+<option value="3">西雅图</option>
+<option value="4">水牛城</option>
+<option value="5">洛杉矶或圣何塞</option>
+</select>
+</td><td>
+<span id="msec">CPU</span>
+<select id="cpuv">
+<option value="0">所有</option>
+<option value="2">大于1核</option>
+<option value="3">大于2核</option>
+<option value="4">大于3核</option>
+<option value="5">大于4核</option>
+<option value="6">大于5核</option>
+</select>
+</td><td>
+<span id="msec">内存</span>
+<select id="ramv">
+<option value="0">所有</option>
+<option value="512">内存大于512M</option>
+<option value="1024">内存大于1024M</option>
+<option value="2048">内存大于2048M</option>
+<option value="4096">内存大于4096M</option>
+<option value="8192">内存大于8192M</option>
+</select>
+</td><td>
+<span id="msec">硬盘</span>
+<select id="hddv">
+<option value="0">所有</option>
+<option value="5">硬盘大于5G</option>
+<option value="10">硬盘大于10G</option>
+<option value="15">硬盘大于15G</option>
+<option value="20">硬盘大于20G</option>
+<option value="30">硬盘大于30G</option>
+<option value="50">硬盘大于50G</option>
+</select>
+</td><td>
+<span id="msec">流量</span>
+<select id="bwv">
+<option value="0">所有</option>
+<option value="100">流量大于100G</option>
+<option value="200">流量大于200G</option>
+<option value="300">流量大于300G</option>
+<option value="500">流量大于500G</option>
+<option value="1000">流量大于1000G</option>
+<option value="3000">流量大于3000G</option>
+<option value="5000">流量大于5000G</option>
+</select>
+</td>
+
+
+</tr>
+</tbody></table>	
+	
+<img src="hr.png" >
+	<br></><a href="http://iytc.net/vir_list.php"  style="color:blue;" target=_blank >服务器历史记录</a>
+	<br></><a href="javascript:void(0)" onclick="cleartb();" style="color:blue;" >清除本地历史记录</a>
+	<table id="mytable1" cellspacing="0" summary="历史记录"  align="center" style="width:900px" >
+	<tbody id="mtb"><tr><td colspan="9" align="center" class="nobg"> Virmach闪购本地历史记录</td>	</tr>
+  <tr>
+    <th>闪购开始时间</th>    
+    <th>CPU数</th>
+		<th>内存</th>
+    <th>磁盘</th>
+    <th>流量</th>
+    <th>架构</th>
+    <th>VPS所在地点</th>
+    <th>可否windows</th>	
+    <th>VPS年付价格</th>
+	
+  </tr>
+  
+ 
+</tbody></table>
+<img src="hr.png" >
+<footer class="footer__Footer-xl8ai1-0 bIzpif"><p><strong> - 各地测速 - </strong></p><p>Serverhub – <strong>Frankfurt, DE</strong><br> 测试 IP: 50.3.68.2<br> <a target="_blank" href="http://ffm.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://ffm.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing – <strong>Buffalo, NY</strong><br> 测试 IP: 192.227.227.194<br> <a target="_blank" href="http://ny.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://ny.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing/Serverhub – <strong>Dallas, TX</strong><br> 测试 IP: 172.245.210.3<br> <a target="_blank" href="http://dal.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://dal.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing – <strong>Los Angeles, CA</strong><br> 测试 IP: 107.172.246.38<br> <a target="_blank" href="http://la.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://la.lg.virmach.com">Looking Glass</a></p><p>Serverhub – <strong>Chicago, IL</strong><br> 测试 IP: 172.245.86.17<br> <a target="_blank" href="http://chi.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://chi.lg.virmach.com">Looking Glass</a></p><p>Serverhub – <strong>Phoenix, AZ</strong><br> 测试 IP: 173.213.69.188<br> <a target="_blank" href="http://phx.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://phx.lg.virmach.com">Looking Glass</a></p><p>Serverhub – <strong>Seattle, WA</strong><br> 测试 IP: 104.140.22.36<br> <a target="_blank" href="http://sea.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://sea.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing – <strong>Atlanta, GA</strong><br> 测试 IP: 23.94.94.166<br> <a target="_blank" href="http://atl.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://atl.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing – <strong>San Jose, CA</strong><br> 测试 IP: 107.172.103.185<br> <a target="_blank" href="http://sj.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://sj.lg.virmach.com">Looking Glass</a></p><p>Voxility – <strong>Los Angeles, CA</strong> (DDoS Protection)<br> 测试 IP: 45.43.7.43<br> <a target="_blank" href="http://filtered-la.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://filtered-la.lg.virmach.com">Looking Glass</a></p><p>ColoCrossing – <strong>Piscataway, NJ</strong> (NYC)<br> 测试 IP: 198.46.189.4<br> <a target="_blank" href="http://nj.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://nj.lg.virmach.com">Looking Glass</a></p><p>Serverhub – <strong>Amsterdam, NL</strong><br> 测试 IP: 104.206.240.6<br> <a target="_blank" href="http://ams.lg.virmach.com/100MB.test">100MB</a> | <a target="_blank" href="http://ams.lg.virmach.com">Looking Glass</a></p><p>&nbsp;</p></footer>
+
+</body>
+</html>
